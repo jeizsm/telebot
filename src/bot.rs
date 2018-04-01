@@ -15,9 +15,9 @@ use std::cell::{Cell, RefCell};
 
 use tokio_core::reactor::{Core, Handle, Interval};
 use hyper::{Body, Client, Method, Request, Uri};
-use hyper::client::{Config, FutureResponse, HttpConnector};
+use hyper::client::{Config, FutureResponse};
 use hyper::header::ContentType;
-use hyper_tls::HttpsConnector;
+use hyper_rustls::HttpsConnector;
 use hyper_multipart::client::multipart;
 use serde_json;
 use serde_json::value::Value;
@@ -31,14 +31,6 @@ use futures::sync::mpsc::UnboundedSender;
 #[derive(Clone)]
 pub struct RcBot {
     pub inner: Rc<Bot>,
-}
-
-impl RcBot {
-    pub fn new(handle: Handle, key: &str) -> RcBot {
-        RcBot {
-            inner: Rc::new(Bot::new(handle, key)),
-        }
-    }
 }
 
 /// The main bot structure
@@ -92,12 +84,12 @@ impl Bot {
         &self,
         func: &'static str,
         msg: String,
-    ) -> Result<(Client<HttpsConnector<HttpConnector>, Body>, Request<Body>), Error> {
+    ) -> Result<(Client<HttpsConnector, Body>, Request<Body>), Error> {
         let url: Result<Uri, _> =
             format!("https://api.telegram.org/bot{}/{}", self.key, func).parse();
 
         let client = Client::configure()
-            .connector(HttpsConnector::new(2, &self.handle).context(ErrorKind::HttpsInitializeError)?)
+            .connector(HttpsConnector::new(2, &self.handle))
             .build(&self.handle);
 
         let mut req = Request::new(Method::Post, url.context(ErrorKind::Uri)?);
@@ -135,14 +127,14 @@ impl Bot {
         kind: &str,
     ) -> Result<
         (
-            Client<HttpsConnector<HttpConnector>, multipart::Body>,
+            Client<HttpsConnector, multipart::Body>,
             Request<multipart::Body>,
         ),
         Error,
     > {
-        let client: Client<HttpsConnector<_>, multipart::Body> = Config::default()
+        let client: Client<HttpsConnector, multipart::Body> = Config::default()
             .body::<multipart::Body>()
-            .connector(HttpsConnector::new(4, &self.handle).context(ErrorKind::HttpsInitializeError)?)
+            .connector(HttpsConnector::new(4, &self.handle))
             .keep_alive(true)
             .build(&self.handle);
 
@@ -215,6 +207,12 @@ pub fn _fetch(fut_res: FutureResponse) -> impl Future<Item = String, Error = Err
 }
 
 impl RcBot {
+    pub fn new(handle: Handle, key: &str) -> RcBot {
+        RcBot {
+            inner: Rc::new(Bot::new(handle, key)),
+        }
+    }
+
     /// Sets the update interval to an integer in milliseconds
     pub fn update_interval(self, interval: u64) -> RcBot {
         self.inner.update_interval.set(interval);
