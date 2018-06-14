@@ -246,7 +246,7 @@ pub struct File {
 
 /// This object represents a custom keyboard with reply options (see Introduction to bots for
 /// details and examples).
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(setter, Serialize, Deserialize, Debug)]
 pub struct ReplyKeyboardMarkup {
     pub keyboard: Vec<Vec<KeyboardButton>>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -260,7 +260,7 @@ pub struct ReplyKeyboardMarkup {
 /// This object represents one button of the reply keyboard. For simple text buttons String can be
 /// used instead of this object to specify text of the button. Optional fields are mutually
 /// exclusive.
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(setter, Serialize, Deserialize, Debug)]
 pub struct KeyboardButton {
     pub text: String,
     #[serde(skip_serializing_if = "Option::is_none")]
